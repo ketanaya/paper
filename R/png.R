@@ -48,3 +48,10 @@ acf(nikkei_cl, main = "")
 
 # 4. 終了
 dev.off()
+
+
+png(filename = "decomp_plot.png", 
+    width = 3000, height = 2400, res = 300, pointsize = 18)
+library(timsac)
+dp <- decomp(nikkei_cl, trend.order = 1, ar.order = 6, seasonal.order = 0)
+dev.off()

@@ -1,4 +1,4 @@
-\documentclass[a4j,11pt,dvipdfmx]{jreport}
+\documentclass[uplatex,a4j,11pt,dvipdfmx]{ujreport}
 
 \usepackage{graphicx}
 \usepackage{hyperref}
@@ -131,45 +131,112 @@ Autocorrelations of series ‘nikkei_cl’, by lag
 
 \chapter{平方根フィルタを用いた非定常時系列データの構成成分分解(仮)}
 
-\section{decompについて}
-(decompをやる目的)、を検証するために本研究ではTIMSACパッケージのdecomp関数を使用する。decomp関数とは()を行うための関数である。具体的には以下のモデル式をし
+\section{decompについて(仮)}
+(decompをやる目的)、を検証するために本研究ではTIMSACパッケージのdecomp関数を使用する。decomp関数とは()を行うための関数である。
+具体的には以下のモデル式を使用する
 
-以下は\emph{単回帰モデル} (simple regression model) とよばれる:
+
 \begin{equation}
-y_{i} = \beta_{0} + \beta_{1} x_{i} + \epsilon_{i}, \quad i = 1, \dots, n
-\end{equation}
+y(t) = T(t) + AR(t) + S(t) + TD(t) + W(t)
+\end{equation} 
 
-なお, 回帰分析については, \cite{Jimichi2018-c} を参照されたい. 
+ここで、T(t)はトレンド成分、AR(t)はAR成分、S(t)は季節成分、TD(t)は曜日効果成分、W(t)は観測ノイズである。
+なお, これらは \cite{timsac} を参照している。
+今回のデータはxtsオブジェクトのため〜なため、季節成分は除外して考える。また、曜日効果成分も〜という理由から除外して考える。
+次にトレンド成分、AR成分の次数を決定するために、AIC(赤池情報量基準, Akaike's Information Criterion)を用いる。(AICの説明)
+ここで、timsacパッケージを用いて、トレンド成分の次数を1,2,3、AR成分の次数を1~7に設定し、全ての組み合わせのAICを求めた。これらの組み合わせの中で最もAICが小さい
+モデルを採用する。
+\begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
+    > library(timsac)
+    > y <- nikkei_cl
+    > 
+    > for (m1 in 1:3) {
+    +   for (m2 in 1:7) {
+    +     k <- 0
+    +     
+    +     fit <- try(
+    +       decomp(
+    +         y,
+    +         trend.order    = m1,
+    +         ar.order       = m2,
+    +         seasonal.order = k,
+    +         plot           = FALSE
+    +       ),
+    +       silent = TRUE
+    +     )
+    +     
+    +     if (inherits(fit, "try-error")) {
+    +       cat("[ERROR]",
+    +           "trend.order =", m1,
+    +           "ar.order =", m2,
+    +           "seasonal.order =", k,
+    +           "AIC = NA\n")
+    +     } else {
+    +       cat("trend.order =", m1,
+    +           "ar.order =", m2,
+    +           "seasonal.order =", k,
+    +           "AIC =", fit$aic, "\n")
+    +     }
+    +   }
+    + }    
+\end{Verbatim}
+上記を実行すると下記のような結果が得られる。
+\begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
+    trend.order = 1 ar.order = 1 seasonal.order = 0 AIC = 35465.07 
+    trend.order = 1 ar.order = 2 seasonal.order = 0 AIC = 35370.69 
+    trend.order = 1 ar.order = 3 seasonal.order = 0 AIC = 35369.54 
+    trend.order = 1 ar.order = 4 seasonal.order = 0 AIC = 35368.89 
+    trend.order = 1 ar.order = 5 seasonal.order = 0 AIC = 35631.88 
+    trend.order = 1 ar.order = 6 seasonal.order = 0 AIC = 35354.22 
+    trend.order = 1 ar.order = 7 seasonal.order = 0 AIC = 35388.21 
+    trend.order = 2 ar.order = 1 seasonal.order = 0 AIC = 35644.09 
+    trend.order = 2 ar.order = 2 seasonal.order = 0 AIC = 35411.51 
+    trend.order = 2 ar.order = 3 seasonal.order = 0 AIC = 35402.68 
+    trend.order = 2 ar.order = 4 seasonal.order = 0 AIC = 35389.37 
+    trend.order = 2 ar.order = 5 seasonal.order = 0 AIC = 35393.69 
+    trend.order = 2 ar.order = 6 seasonal.order = 0 AIC = 35390.23 
+    trend.order = 2 ar.order = 7 seasonal.order = 0 AIC = 35391.92 
+    trend.order = 3 ar.order = 1 seasonal.order = 0 AIC = 35832.37 
+    trend.order = 3 ar.order = 2 seasonal.order = 0 AIC = 35560.81 
+    trend.order = 3 ar.order = 3 seasonal.order = 0 AIC = 35550.06 
+    trend.order = 3 ar.order = 4 seasonal.order = 0 AIC = 35530.52 
+    trend.order = 3 ar.order = 5 seasonal.order = 0 AIC = 35534.47 
+    trend.order = 3 ar.order = 6 seasonal.order = 0 AIC = 35527.38 
+    trend.order = 3 ar.order = 7 seasonal.order = 0 AIC = 35530.68    
+\end{Verbatim}
+上記の結果から、トレンド次数 = 1, AR次数 = 6の組み合わせがAIC = 35354.22で最小になった。よって、このモデルを採用する。
 
-\section{回帰診断}
+\section{decomp実行(仮)}
 
-回帰分析を行った際には, 以下のような\emph{回帰診断} (regression diagnostics) を行う必要がある:
-\begin{itemize}
-\item 残差プロット
-\begin{itemize}
-\item インデックスプロット
-\item 正規 Q-Q プロット
-\end{itemize}
-\item 感度分析
-\begin{itemize}
-\item Cook の距離
-\item Andrew-Pregibon 統計量
-\end{itemize}
-\end{itemize}
+3.1節で決定したモデルを用いてdecomp関数を用いて〜する。
+\begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
+> dp <- decomp(nikkei_cl, trend.order = 1, ar.order = 6, seasonal.order = 0)
+\end{Verbatim}
+上記を実行すると下記のような結果が得られる。
 
-例えば, 残差のインデックスプロットを行う手順は以下のようなものである:
-\begin{enumerate}[(手順1)]
-\item 
-横軸に残差の添字 (インデックス), 縦軸に残差をとりプロット
-\item
-$\pm 3\sigma$ 限界を表す水平線を描画
-\end{enumerate}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\linewidth]{figures/decomp_plot.png}
+    \caption{decomp実行結果(仮)} 
+    \label{fig:decomp} 
+    \end{figure}
+
+上記の結果から(考察)
+
+\chapter{ARIMAモデルによる〜分析}
+
+
 
 \chapter{おわりに} % <--ここに章のタイトルを入れる
 
-本稿では, 財務データに対して, 回帰分析を行うことにより, 資産合計から売上高を予測するモデリングを行った. 
+()
 
 \begin{thebibliography}{99} % 文献リストの作成
+
+\bibitem{timsac}
+The Institute of Statistical Mathematics (2023)
+\textit{timsac: Time Series Analysis and Control Package},
+URL: \url{https://cran.r-project.org/package=timsac}.
 
 \bibitem{Janssens} Janssens, J. (2014) \textit{Data Science at the Command Line}, O'Reilly Media. 
 
