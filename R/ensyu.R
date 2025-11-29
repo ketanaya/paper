@@ -1,0 +1,10 @@
+install.packages("TSSS")
+library(TSSS)
+data(HAKUSAN)
+data("Sunspot")
+
+x <- rnorm(100000)
+hist(x)
+plot(density(x))
+qqnorm(x)
+qqline(x)

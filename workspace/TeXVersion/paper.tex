@@ -1,0 +1,210 @@
+\documentclass[a4j,11pt,dvipdfmx]{jreport}
+
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumerate}
+\usepackage{fancyvrb}
+\usepackage{fvextra}
+\usepackage{mdframed}
+\makeatletter
+\def\kcharparline#1{
+    \newcounter{chr}
+    \setcounter{chr}{#1}
+    \@tempdima=\linewidth
+    \advance\@tempdima by-\value{chr}zw
+    \addtocounter{chr}{-1}
+    \divide\@tempdima by \value{chr}
+    \advance\kanjiskip by\@tempdima
+    \advance\parindent by\@tempdima}
+\def\lineparpage#1{
+    \baselineskip=\textheight
+    \divide\baselineskip by #1}
+\makeatother
+
+\renewcommand{\bibname}{参考文献}
+
+\begin{document}
+
+\kcharparline{40} % 一行の文字数
+\lineparpage{25}  % 一頁の行数
+
+
+\title{卒業論文 \\
+日経平均株価の時系列分析}
+\author{
+関西学院大学 商学部 \\
+26022435 宮崎綾平% <--ここに学生番号と氏名を入れる
+}
+\date{2025年4月7日} % <--ここに作成日を入れる. 
+%\date{\today} % 
+
+
+\maketitle % タイトルページの作成
+
+\tableofcontents % 目次の作成
+
+\chapter{はじめに}
+
+()
+
+\chapter{現状分析(仮)} %<--ここに章のタイトルを入れる
+この章では取得した日経平均株価のデータについての〜
+\section{データの取得} % <--ここに節のタイトルを入れる
+本研究で取得するデータはRのquantmodパッケージを使って以下のコードにより取得している。
+
+
+\begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
+> nikkei <- getSymbols(Symbols = "^N225", 
+                       src = "yahoo",
+                       from = "2015-01-01",
+                       to = "2024-12-31",
+                       auto.assign = FALSE)
+\end{Verbatim}
+
+\section{データの前処理}
+まずはデータの前処理を行う。以下で粗データについて確認する。
+\begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
+> head(nikkei)
+           N225.Open N225.High N225.Low N225.Close N225.Volume N225.Adjusted
+2015-01-05  17325.68  17540.92 17219.22   17408.71   116500000      17408.71
+2015-01-06  17101.58  17111.36 16881.73   16883.19   166000000      16883.19
+2015-01-07  16808.26  16974.61 16808.26   16885.33   138600000      16885.33
+2015-01-08  17067.40  17243.71 17016.09   17167.10   140600000      17167.10
+2015-01-09  17318.74  17342.65 17129.53   17197.73   155200000      17197.73
+2015-01-13  16970.88  17087.71 16828.27   17087.71   149200000      17087.71
+\end{Verbatim}
+
+粗データには「始値、高値、安値、終値、売買高、調整後終値」の列が存在する。本研究では終値を対象として分析を行う。以下で終値の列だけを抽出し、summary()でデータを確認する。なお、21個の欠測値が確認できるが、全て祝日で取引が行われていない日のデータであるため、na.omit()を使い除去する。
+
+
+
+\begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
+> nikkei_cl <- Cl(nikkei)
+> summary(nikkei_cl)
+     Index              N225.Close   
+ Min.   :2015-01-05   Min.   :14952  
+ 1st Qu.:2017-07-07   1st Qu.:20013  
+ Median :2019-12-14   Median :22823  
+ Mean   :2019-12-27   Mean   :24832  
+ 3rd Qu.:2022-06-28   3rd Qu.:28451  
+ Max.   :2024-12-30   Max.   :42224  
+                      NA's   :21     
+> nikkei_cl <- na.omit(nikkei_cl)
+\end{Verbatim}
+
+\section{データの時系列プロット}
+
+
+図 \ref{fig:nikkei-cl} は、データの時系列プロットを描き、終値の変化を捉えたものである。
+大きく値が変化している部分について、原因と推測される要因を挙げる。周期性はない。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\linewidth]{figures/nikkei_plot}
+\caption{日経平均株価(終値)の推移} 
+\label{fig:nikkei-cl} 
+\end{figure}
+
+\section{時系列データの自己相関}
+
+図 \ref{fig:acf} は、データの自己相関をプロットしたものである。詳細な自己相関係数についても確認できる。(ここに考察)
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\linewidth]{figures/acf}
+\caption{日経平均株価(終値)の自己相関} 
+\label{fig:acf} 
+\end{figure}
+
+\begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
+> acf(nikkei_cl, plot = FALSE)
+
+Autocorrelations of series ‘nikkei_cl’, by lag
+
+    0     1     2     3     4     5     6     7     8     9    10    11    12 
+1.000 0.997 0.994 0.992 0.989 0.986 0.984 0.981 0.979 0.976 0.974 0.972 0.969 
+   13    14    15    16    17    18    19    20    21    22    23    24    25 
+0.967 0.964 0.962 0.960 0.957 0.955 0.953 0.951 0.949 0.947 0.945 0.943 0.941 
+   26    27    28    29    30    31    32    33 
+0.939 0.937 0.935 0.933 0.931 0.929 0.927 0.924 
+\end{Verbatim}
+
+\chapter{平方根フィルタを用いた非定常時系列データの構成成分分解(仮)}
+
+\section{decompについて}
+(decompをやる目的)、を検証するために本研究ではTIMSACパッケージのdecomp関数を使用する。decomp関数とは()を行うための関数である。具体的には以下のモデル式をし
+
+以下は\emph{単回帰モデル} (simple regression model) とよばれる:
+\begin{equation}
+y_{i} = \beta_{0} + \beta_{1} x_{i} + \epsilon_{i}, \quad i = 1, \dots, n
+\end{equation}
+
+なお, 回帰分析については, \cite{Jimichi2018-c} を参照されたい. 
+
+\section{回帰診断}
+
+回帰分析を行った際には, 以下のような\emph{回帰診断} (regression diagnostics) を行う必要がある:
+\begin{itemize}
+\item 残差プロット
+\begin{itemize}
+\item インデックスプロット
+\item 正規 Q-Q プロット
+\end{itemize}
+\item 感度分析
+\begin{itemize}
+\item Cook の距離
+\item Andrew-Pregibon 統計量
+\end{itemize}
+\end{itemize}
+
+例えば, 残差のインデックスプロットを行う手順は以下のようなものである:
+\begin{enumerate}[(手順1)]
+\item 
+横軸に残差の添字 (インデックス), 縦軸に残差をとりプロット
+\item
+$\pm 3\sigma$ 限界を表す水平線を描画
+\end{enumerate}
+
+\chapter{おわりに} % <--ここに章のタイトルを入れる
+
+本稿では, 財務データに対して, 回帰分析を行うことにより, 資産合計から売上高を予測するモデリングを行った. 
+
+\begin{thebibliography}{99} % 文献リストの作成
+
+\bibitem{Janssens} Janssens, J. (2014) \textit{Data Science at the Command Line}, O'Reilly Media. 
+
+(太田満久, 下田倫大, 増田泰彦監訳, 長尾高弘訳 (2015) 『コマンドラインではじめるデータサイエンス: 分析プロセスを自在に進めるテクニック』, オライリー・ジャパン.)
+
+\bibitem{Jimichi2018-a} 地道正行 (2018-a)
+『探索的財務ビッグデータ解析 --前処理、データラングリング、再現可能性--』, 
+商学論究, 第66巻, 第1号, pp. 1-31, 
+関西学院大学商学研究会. 
+
+\bibitem{Jimichi2018-b} 地道正行 (2018-b) 
+『探索的財務ビッグデータ解析 --データ可視化, 統計モデリング, モデル選択, モデル評価, 動的文書生成, 再現可能研究--』, 
+商学論究, 第66巻, 第2号, pp. 1-41, 
+関西学院大学商学研究会. 
+
+\bibitem{Jimichi2018-c}
+地道 正行 (2018-c)
+『データサイエンスの基礎: R による統計学独習』, 
+裳華房
+
+\bibitem{Motohashi} 本橋智光 (2018)『前処理大全: データ分析のための SQL/R/Python 実践テクニック』, 技術評論社.
+
+\bibitem{Nishida} 西田圭介 (2017)『ビッグデータを支える技術: 刻々とデータが脈打つ自動化の世界』, 技術評論社.
+
+\bibitem{Tange} Tange, Ole, (2018) \textit{GNU Parallel 2018}, ISBN: 9781387509881, DOI: 10.5281/zenodo.1146014, URL: \url{https://doi.org/10.5281/zenodo.1146014}, Mar, 2018.
+
+\bibitem{Wickham.et.al(2023)}
+Wickham, H., M.~\c{C}etinkaya-Rundel, and G.~Grolemund, 
+(2023)
+\textit{R for Data Science: Import, Tidy, Transform, Visualize, and Model Data, 2nd edition}, 
+O'Reilly. 
+
+\end{thebibliography}
+
+\section*{謝辞}
+
+本研究に対して, 関学花子先生から適切なコメントを頂いたことに, 感謝の意を表する. 
+
+\end{document}

@@ -1,0 +1,197 @@
+\documentclass[a4j,11pt,dvipdfmx]{jreport}
+
+\usepackage{graphicx}
+\usepackage{amssymb,amsmath,amsfonts}
+\usepackage{hyperref}
+\usepackage{enumerate}
+\usepackage{float}
+
+\makeatletter
+\def\kcharparline#1{
+    \newcounter{chr}
+    \setcounter{chr}{#1}
+    \@tempdima=\linewidth
+    \advance\@tempdima by-\value{chr}zw
+    \addtocounter{chr}{-1}
+    \divide\@tempdima by \value{chr}
+    \advance\kanjiskip by\@tempdima
+    \advance\parindent by\@tempdima}
+\def\lineparpage#1{
+    \baselineskip=\textheight
+    \divide\baselineskip by #1}
+\makeatother
+
+\renewcommand{\bibname}{参考文献}
+
+<<echo=F>>=
+library(tidyverse)
+library(xtable)
+x <- read_csv("../R/tmp.csv") |> select(sales, assets) 
+@
+
+
+\begin{document}
+
+\kcharparline{40} % 一行の文字数
+\lineparpage{25}  % 一頁の行数
+
+
+\title{卒業論文 \\
+財務データの回帰分析
+}
+\author{
+関西学院大学 商学部 \\
+2601xxxx 関学 太郎% <--ここに学生番号と氏名を入れる
+}
+\date{2025年1月5日} % <--ここに作成日を入れる. 
+%\date{\today} % 
+
+
+\maketitle % タイトルページの作成
+
+\tableofcontents % 目次の作成
+
+\chapter{はじめに}
+
+本稿では, 財務データに対して回帰分析を使ったデータ解析を行う. 
+
+\chapter{財務データと可視化} %<--ここに章のタイトルを入れる
+
+\section{データ} % <--ここに節のタイトルを入れる
+
+表 \ref{table:dataset} は, 全世界の企業の2017年の売上高(単位: 1000米ドル)と資産合計(単位: 1000米ドル)である:
+<<echo=F,results=tex>>=
+print(
+  xtable(x, 
+         digits=c(0,0,0), display=c("s",rep("f",2)), 
+         floating=FALSE,
+         caption = c("財務データ: 売上高(sales, 1000米ドル)と資産合計(assets, 1000米ドル)"), 
+         label = "table:dataset"),
+  caption.placement = "top", 
+  table.placement="hbpt")
+@
+
+
+\section{データ可視化: 散布図}
+
+図 \ref{figure:scatterplot} は, 資産合計を横軸にとり, 売上高を縦軸にとったときの散布図である. 
+
+\setkeys{Gin}{width=1\textwidth}
+\begin{figure}[hbpt]
+\begin{center}
+<<echo=F,fig=T,png=T,pdf=F>>=
+x |> ggplot(aes(assets, sales)) + geom_point()
+@
+\caption{散布図}
+\label{figure:scatterplot}
+\end{center}
+\end{figure}
+
+\chapter{回帰分析}
+
+\section{単回帰モデル}
+
+\subsection{定義} %<--ここに小節のタイトルを入れる
+
+以下は\emph{単回帰モデル} (simple regression model) とよばれる:
+\begin{equation}
+y_{i} = \beta_{0} + \beta_{1} x_{i} + \epsilon_{i}, \quad i = 1, \dots, n
+\label{model:simple.regression}
+\end{equation}
+
+なお, 回帰分析については, \cite{Jimichi2018-c} を参照されたい. 
+
+\subsection{単回帰モデルの当てはめ}
+
+<<echo=F>>=
+lm.x <- lm(sales ~ assets, x)
+@
+
+実際に, 表 \ref{table:dataset} で与えられたデータに対して, 単回帰モデル \eqref{model:simple.regression} を当てはめよう. 
+回帰係数 $\beta_{0}$, $\beta_{1}$ の最小自乗推定値を, それぞれ, $\Hat{\beta}_{0}$, $\Hat{\beta}_{1}$ としたとき, 
+標本回帰直線は以下で与えられる (図 \ref{figure:scatterplot.regression.line} も参照).
+\begin{equation}
+y 
+= \hat{\beta}_{0} + \hat{\beta}_{1} x
+= \Sexpr{round(coef(lm.x)[1], 3)} + \Sexpr{round(coef(lm.x)[2], 3)} x
+\end{equation}
+
+\begin{figure}[hbpt]
+\begin{center}
+<<echo=F,fig=T,png=T,pdf=F>>=
+p <- x |> ggplot(aes(assets, sales)) + 
+  geom_point() + 
+  geom_smooth(method = lm, se = F)
+plot(p)
+@
+\caption{散布図: 標本回帰直線付き}
+\label{figure:scatterplot.regression.line}
+\end{center}
+\end{figure}
+
+
+
+\section{回帰診断}
+
+回帰分析を行った際には, 以下のような\emph{回帰診断} (regression diagnostics) を行う必要がある:
+\begin{itemize}
+\item 残差プロット
+\begin{itemize}
+\item インデックスプロット
+\item 正規 Q-Q プロット
+\end{itemize}
+\item 感度分析
+\begin{itemize}
+\item Cook の距離
+\item Andrew-Pregibon 統計量
+\end{itemize}
+\end{itemize}
+
+例えば, 残差のインデックスプロットを行う手順は以下のようなものである:
+\begin{enumerate}[(手順1)]
+\item 
+横軸に残差の添字 (インデックス), 縦軸に残差をとりプロット
+\item
+$\pm 3\sigma$ 限界を表す水平線を描画
+\end{enumerate}
+
+\chapter{おわりに} % <--ここに章のタイトルを入れる
+
+本稿では, 財務データに対して, 回帰分析を行うことにより, 資産合計から売上高を予測するモデリングを行った. 
+
+\begin{thebibliography}{99} % 文献リストの作成
+
+\bibitem{Janssens} Janssens, J. (2014) \textit{Data Science at the Command Line}, O'Reilly Media. 
+
+(太田満久, 下田倫大, 増田泰彦監訳, 長尾高弘訳 (2015) 『コマンドラインではじめるデータサイエンス: 分析プロセスを自在に進めるテクニック』, オライリー・ジャパン.)
+
+\bibitem{Jimichi2018-a} 地道正行 (2018-a)
+『探索的財務ビッグデータ解析 --前処理、データラングリング、再現可能性--』, 
+商学論究, 第66巻, 第1号, pp. 1-31, 
+関西学院大学商学研究会. 
+
+\bibitem{Jimichi2018-b} 地道正行 (2018-b) 
+『探索的財務ビッグデータ解析 --データ可視化, 統計モデリング, モデル選択, モデル評価, 動的文書生成, 再現可能研究--』, 
+商学論究, 第66巻, 第2号, pp. 1-41, 
+関西学院大学商学研究会. 
+
+\bibitem{Jimichi2018-c}
+地道 正行 (2018-c)
+『データサイエンスの基礎: R による統計学独習』, 
+裳華房
+
+\bibitem{Motohashi} 本橋智光 (2018)『前処理大全: データ分析のための SQL/R/Python 実践テクニック』, 技術評論社.
+
+\bibitem{Nishida} 西田圭介 (2017)『ビッグデータを支える技術: 刻々とデータが脈打つ自動化の世界』, 技術評論社.
+
+\bibitem{Tange} Tange, Ole, (2018) \textit{GNU Parallel 2018}, ISBN: 9781387509881, DOI: 10.5281/zenodo.1146014, URL: \url{https://doi.org/10.5281/zenodo.1146014}, Mar, 2018.
+
+\bibitem{Wickham-Grolemund} Wickham, H. and G. Grolemund (2016) \textit{R for Data Science}, O'Reilly.
+
+\end{thebibliography}
+
+\section*{謝辞}
+
+本研究に対して, 関学 花子先生から適切なコメントを頂いたことに, 感謝の意を表する. 
+
+\end{document}

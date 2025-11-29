@@ -1,0 +1,30 @@
+# Mac System
+.DS_Store
+
+# LaTeX Intermediate Files
+*.aux
+*.log
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.dvi
+*.bbl
+*.blg
+*.out
+*.lof
+*.lot
+
+# PDF (成果物は基本管理せず、必要ならReleases機能を使うのが一般的)
+# 残したい場合は行頭に # をつけてコメントアウトしてください
+*.pdf
+
+# R / RStudio
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# Python (もし使うなら)
+__pycache__/
+*.pyc
