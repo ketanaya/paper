@@ -55,7 +55,7 @@ for (m1 in 1:3) {
     }
   }
 }
-
+library(timsac)
 dp <- decomp(nikkei_cl, trend.order = 1, ar.order = 6, seasonal.order = 0)
 dp$aic
 dp$trend

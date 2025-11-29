@@ -51,7 +51,8 @@ dev.off()
 
 
 png(filename = "decomp_plot.png", 
-    width = 3000, height = 2400, res = 300, pointsize = 18)
+    width = 2400, height = 2400, res = 300, pointsize = 20)
+par(mar = c(2, 2, 3, 1))
 library(timsac)
 dp <- decomp(nikkei_cl, trend.order = 1, ar.order = 6, seasonal.order = 0)
 dev.off()
