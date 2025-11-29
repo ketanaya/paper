@@ -12,6 +12,8 @@ summary(nikkei_cl)
 plot(nikkei_cl)
 acf(nikkei_cl,main = "")
 acf(nikkei_cl, plot = FALSE)
+
+
 #
 library(dygraphs)
 dygraph(nikkei_cl, main = "Nikkei 225 Closing Prices") |>
