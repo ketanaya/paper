@@ -12,23 +12,21 @@ nikkei <- getSymbols(Symbols = "^N225",
 nikkei_cl <- Cl(nikkei)
 nikkei_cl <- na.omit(nikkei_cl)
 
-df_nikkei <- data.frame(
-  Date = index(nikkei_cl),
-  Price = coredata(nikkei_cl)
-)
+df_nikkei <- ggplot2::fortify(nikkei_cl)
+class(df_nikkei)
 colnames(df_nikkei) <- c("Date", "Price")
-
+head(df_nikkei)
 # 3. ggplotで作図
 p <- ggplot(data = df_nikkei, aes(x = Date, y = Price)) +
   geom_line() +
   theme_minimal(base_family = "HiraginoSans-W3") + 
   labs(title = NULL,
        x = "日付",
-       # ▼▼▼ 修正点1: 文字の間に「\n」を入れて改行させる ▼▼▼
        y = "終\n値") +
   theme(
-    # ▼▼▼ 修正点2: ラベルの角度を0度(水平)に戻す ▼▼▼
-    axis.title.y = element_text(angle = 0, vjust = 0.5) 
+    axis.title.y = element_text(angle = 0, vjust = 0.5),
+    # ▼▼▼ 追加: 背景を白にする設定 ▼▼▼
+    plot.background = element_rect(fill = "white", color = NA)
   )
 
 # 画面表示

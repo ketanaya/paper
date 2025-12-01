@@ -9,7 +9,8 @@ nikkei_cl <- Cl(nikkei)
 summary(nikkei_cl)
 nikkei_cl <- na.omit(nikkei_cl)
 summary(nikkei_cl)
-plot(nikkei_cl)
+plot(nikkei_cl, main = NULL)
+help("plot")
 acf(nikkei_cl,main = "")
 acf(nikkei_cl, plot = FALSE)
 
@@ -100,6 +101,24 @@ report(model)
 report(model_bc)
 
 #normal
+model |>
+  gg_tsresiduals()　
+
+
+model |>
+  augment() |>
+  filter(.model == "auto") |>
+  features(.innov, ljung_box, lag = 10, dof = 3)
+
+model |>
+  forecast(h = 250) |>
+  filter(.model == "auto") |>
+  autoplot(nikkei_ts_idx) +
+  labs(
+    title = "One-year Forecast of Nikkei 225",
+    y = "Nikkei 225 (level scale)",
+    level = "Prediction interval"
+  )
 
 
 #Box-Cox
