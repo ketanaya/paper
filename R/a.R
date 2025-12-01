@@ -99,6 +99,10 @@ model_bc <- nikkei_ts_idx |>
 report(model)
 report(model_bc)
 
+#normal
+
+
+#Box-Cox
 model_bc |>
   gg_tsresiduals()　
 

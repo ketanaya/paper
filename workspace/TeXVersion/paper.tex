@@ -109,16 +109,16 @@
 \section{時系列データの自己相関}
 
 図 \ref{fig:acf} は、データの自己相関をプロットしたものである。詳細な自己相関係数についても確認できる。(ここに考察)
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.9\linewidth]{figures/acf}
-\caption{日経平均株価(終値)の自己相関} 
-\label{fig:acf} 
-\end{figure}
+
+\begin{figure}[htbp] %何故か図がコードブロックに入り込んでる
+    \centering
+    \includegraphics[width=0.9\linewidth]{figures/acf}
+    \caption{日経平均株価(終値)の自己相関} 
+    \label{fig:acf} 
+    \end{figure}
 
 \begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
 > acf(nikkei_cl, plot = FALSE)
-
 Autocorrelations of series ‘nikkei_cl’, by lag
 
     0     1     2     3     4     5     6     7     8     9    10    11    12 
@@ -224,7 +224,10 @@ y(t) = T(t) + AR(t) + S(t) + TD(t) + W(t)
 上記の結果から(考察)
 
 \chapter{ARIMAモデルによる〜分析}
-
+\section{ARIMAモデルについて}
+\section{モデル化の手順}
+非季節性時系列データにARIMAモデルを適合する際は、下記の手順を実施する。
+\section{モデル化と評価}
 
 
 \chapter{おわりに} % <--ここに章のタイトルを入れる
