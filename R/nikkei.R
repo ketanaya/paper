@@ -11,8 +11,8 @@ class(nikkei)
 summary(nikkei)
 
 nikkei_cl <- Cl(nikkei)
-na_days <- nikkei_cl[is.na(nikkei_cl)]
-na_days
+na <- nikkei_cl[is.na(nikkei_cl)]
+na
 
 
 install.packages("timsac")

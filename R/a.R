@@ -13,7 +13,7 @@ plot(nikkei_cl, main = NULL)
 help("plot")
 acf(nikkei_cl,main = "")
 acf(nikkei_cl, plot = FALSE)
-
+help("summary")
 
 #
 library(dygraphs)
