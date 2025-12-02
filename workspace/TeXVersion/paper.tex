@@ -49,7 +49,7 @@
 ()
 
 \chapter{現状分析(仮)} %<--ここに章のタイトルを入れる
-この章では、2015年から2024年までの過去10年分の日経平均株価のデータを取得し、時系列の図示などを行うことによって時系列データの
+この章では、2015年から2024年までの過去10年分の日経平均株価のデータを取得し、時系列データの図示を行うことによって時系列データの
 大まかな特徴を捉え、どのような解析を行うべきか方針をたてる。
 \section{データの取得} % <--ここに節のタイトルを入れる
 今回分析ではRのquantmodパッケージを使って下記のように記述することで、2015年から2024年の日経平均株価のデータを取得している。
@@ -126,10 +126,34 @@
 上記の結果をもとに、欠測値が記録されている日付について調べると、全て祝日であることがわかった。
 東京証券取引所は祝日は取引を行っていないため、これらの欠測値を含んだ列は分析に不要と考え、na.omit関数によってデータから取り除く処理を行う。
 
-\section{時系列プロット}
-次に、
-図 \ref{fig:nikkei-cl} は、データの時系列プロットを描き、終値の変化を捉えたものである。
-大きく値が変化している部分について、原因と推測される要因を挙げる。周期性はない。
+\section{時系列データの図示}
+2.2節で前処理を行った時系列データを用い、観測地点を横軸に、観測値を縦軸にとり隣り合う観測値を直線で結んだ図を描く。
+この図を描くことで、時系列データが\emph{トレンド}や\emph{季節性}を含むかをどうかを可視化することができる。なお、トレンドと季節性について定義を
+\cite{Hyndman}から引用する。
+\begin{itemize}
+    \item トレンド
+    \begin{itemize}
+    \item A trend exists when there is a long-term increase or decrease in the data.
+     It does not have to be linear. Sometimes we will refer to a trend as “changing direction”, 
+     when it might go from an increasing trend to a decreasing trend. 
+    \end{itemize}
+\end{itemize}    
+
+\begin{itemize}
+    \item 季節性
+    \begin{itemize}
+    \item A seasonal pattern occurs when a time series is affected by seasonal factors such as 
+    the time of the year or the day of the week. 
+    Seasonality is always of a fixed and known period. 
+    \end{itemize}
+\end{itemize}   
+
+これらを踏まえた上で、時系列データの図示を行ったところ、図 \ref{fig:nikkei-cl} のような結果になった。
+この図からこのデータは上昇トレンドがあることが見て取れる。また、季節性に関しては図を見る限り、確認することはできない。
+加えて、値が急激に変化している地点についても調査を行った。2020年の2月から3月にかけて値の急激な減少の後に、急上昇をしている地点が存在する。
+この原因はコロナによる経済活動の停滞及び、それを受けた日銀の金融政策に対する期待である。また、2024年の1月頃に値が急上昇している地点がある。
+この原因はNVIDIAが市場を上回る好決算を発表したことで、東京市場の半導体関連株が買われたことによるものである。
+なお、これらは\cite{nikkei-1},\cite{nikkei-2}を参照している。
 
 \begin{figure}[htbp]
 \centering
@@ -286,7 +310,7 @@ URL: \url{https://cran.r-project.org/package=timsac}.
 
 \bibitem{Hyndman} 
 Hyndman, R.J., \& Athanasopoulos, G. (2021)
-Forecasting: principles and practice, 3rd edition,
+\textit{Forecasting: principles and practice, 3rd edition},
 OTexts: Melbourne, Australia. 
 URL: \url{https://otexts.com/fpp3/}. 
 Accessed on 2 December 2025
@@ -294,6 +318,16 @@ Accessed on 2 December 2025
 \bibitem{Kitagawa} 北川源四郎 (2020) 
 『Rによる時系列モデリング入門』,
 岩波書店
+
+\bibitem{nikkei-1} 
+日本経済新聞, (10 April 2020),
+『日経平均、3月は記録ずくめ新型コロナで変動大きく: 株式投資の超キホン日経平均を知ろう!(17)』,
+URL: \url{https://www.nikkei.com/article/DGXMZO57807450Y0A400C2I00000/}
+
+\bibitem{nikkei-2} 
+日本経済新聞, (22 February 2024),
+『日経平均、終値3万9098円　34年ぶり最高値更新』,
+URL: \url{https://www.nikkei.com/article/DGXZQOFL220S70S4A220C2000000/}
 
 \bibitem{Janssens} Janssens, J. (2014) \textit{Data Science at the Command Line}, O'Reilly Media. 
 
