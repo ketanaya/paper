@@ -226,8 +226,19 @@ y(t) = T(t) + AR(t) + S(t) + TD(t) + W(t)
 \chapter{ARIMAモデルによる〜分析}
 \section{ARIMAモデルについて}
 \section{モデル化の手順}
-非季節性時系列データにARIMAモデルを適合する際は、下記の手順を実施する。
-\section{モデル化と評価}
+非季節性時系列データにARIMAモデルを適合する際は、下記の手順を実施する。なお, これらは \cite{Hyndman} を参照している。
+1.データをプロットして、異常値を特定する。
+2.必要なら、(Box-Cox変換を使って)データを変換し、分散を安定化させる。
+3.データが非定常なら、定常になるまでデータの一つ目差分を取る。
+4.ACF/PACFを検討する: ARIMA( p,d,0)モデルとARIMA( 0,d,q)モデルのどちらが適切か？
+5.選んだモデルを試す、そして、AICcを使ってより良いモデルを探索する。
+6.選んだモデルからの残差を、ACFプロットやportmanteau検定でチェックする。残差がホワイトノイズらしくなければ、モデルを修正して試す。
+7.残差がホワイトノイズらしく見えるようになったら、予測を計算する。
+\section{モデル化}
+モデル化はfableパッケージのauto.arimaを使う。
+\section{モデルの評価}
+\section{予測と考察}
+
 
 
 \chapter{おわりに} % <--ここに章のタイトルを入れる
@@ -240,6 +251,13 @@ y(t) = T(t) + AR(t) + S(t) + TD(t) + W(t)
 The Institute of Statistical Mathematics (2023)
 \textit{timsac: Time Series Analysis and Control Package},
 URL: \url{https://cran.r-project.org/package=timsac}.
+
+\bibitem{Hyndman} 
+Hyndman, R.J., \& Athanasopoulos, G. (2021)
+Forecasting: principles and practice, 3rd edition,
+OTexts: Melbourne, Australia. 
+URL: \url{https://otexts.com/fpp3/}. 
+Accessed on 2 December 2025
 
 \bibitem{Janssens} Janssens, J. (2014) \textit{Data Science at the Command Line}, O'Reilly Media. 
 
