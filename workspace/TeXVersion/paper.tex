@@ -148,7 +148,7 @@
     \end{itemize}
 \end{itemize}   
 
-これらを踏まえた上で、時系列データの図示を行ったところ、図 \ref{fig:nikkei-cl} のような結果になった。
+これらを踏まえた上で、時系列データの図示を行ったところ、図 \ref{fig:nikkei-cl} のような結果が得られた。
 この図からこのデータは上昇トレンドがあることが見て取れる。また、季節性に関しては図を見る限り、確認することはできない。
 加えて、値が急激に変化している地点についても調査を行った。2020年の2月から3月にかけて値の急激な減少の後に、急上昇をしている地点が存在する。
 この原因はコロナによる経済活動の停滞及び、それを受けた日銀の金融政策に対する期待である。また、2024年の1月頃に値が急上昇している地点がある。
@@ -185,23 +185,23 @@ Autocorrelations of series ‘nikkei_cl’, by lag
 0.939 0.937 0.935 0.933 0.931 0.929 0.927 0.924 
 \end{Verbatim}
 
-\chapter{平方根フィルタを用いた非定常時系列データの構成成分分解(仮)}
+\chapter{時系列データの分解}
 
-\section{decompについて(仮)}
-(decompをやる目的)、を検証するために本研究ではTIMSACパッケージのdecomp関数を使用する。decomp関数とは()を行うための関数である。
-具体的には以下のモデル式を使用する
-
+\section{decomp関数の概要}
+この章では2.3節で得られた、データが上昇トレンドを持っているという考察を、Rのtimsacパッケージに含まれるdecomp関数を使って
+検証する。decomp関数とは時系列データを下記の3.1式に当てはめ、トレンド成分や季節成分などのいくつかの成分に分解する関数である。
 
 \begin{equation}
 y(t) = T(t) + AR(t) + S(t) + TD(t) + W(t)
 \end{equation} 
 
 ここで、T(t)はトレンド成分、AR(t)はAR成分、S(t)は季節成分、TD(t)は曜日効果成分、W(t)は観測ノイズである。
-なお, これらは \cite{timsac} を参照している。
-今回のデータはxtsオブジェクトのため〜なため、季節成分は除外して考える。また、曜日効果成分も〜という理由から除外して考える。
+なお, これらは \cite{timsac} を参照している。\\
+decomp関数を用いるためには各成分の次数を適切に設定し、当てはまりの良いモデルを作成する必要がある。
+よって、次にモデルの次数選択を行う。まず、図\ref{fig:nikkei-cl}から今回のデータは季節成分及び、曜日効果成分を持たないと考え、除外する。
 次にトレンド成分、AR成分の次数を決定するために、AIC(赤池情報量基準, Akaike's Information Criterion)を用いる。(AICの説明)
-ここで、timsacパッケージを用いて、トレンド成分の次数を1,2,3、AR成分の次数を1~7に設定し、全ての組み合わせのAICを求めた。これらの組み合わせの中で最もAICが小さい
-モデルを採用する。
+Rで下記のように記述することで、トレンド成分の次数を1,2,3、AR成分の次数を1~7に設定し、全ての組み合わせのAICを求めた。
+これらの組み合わせの中で最もAICが小さいモデルを採用し、decomp関数を実行する。
 \begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
     > library(timsac)
     > y <- nikkei_cl
@@ -260,24 +260,26 @@ y(t) = T(t) + AR(t) + S(t) + TD(t) + W(t)
     trend.order = 3 ar.order = 6 seasonal.order = 0 AIC = 35527.38 
     trend.order = 3 ar.order = 7 seasonal.order = 0 AIC = 35530.68    
 \end{Verbatim}
-上記の結果から、トレンド次数 = 1, AR次数 = 6の組み合わせがAIC = 35354.22で最小になった。よって、このモデルを採用する。
+この結果から、トレンド次数 = 1, AR次数 = 6の組み合わせがAIC = 35354.22で最小になった。よって、このモデルを採用し、decomp
+関数を実行する。
 
-\section{decomp実行(仮)}
+\section{decomp関数の実行}
 
-3.1節で決定したモデルを用いてdecomp関数を用いて〜する。
+3.1節で決定したモデルを用いて、下記のように記述し、時系列データの分解を行う。
 \begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
 > dp <- decomp(nikkei_cl, trend.order = 1, ar.order = 6, seasonal.order = 0)
 \end{Verbatim}
-上記を実行すると下記のような結果が得られる。
+上記を実行すると図\ref{fig:decomp}ような結果が得られた。この結果から、時系列データがトレンド成分を持つことが明らかになった。
+また、ノイズに関してもほとんど見られないためモデルの当てはまりは良いと考えられる。
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.9\linewidth]{figures/decomp_plot.png}
-    \caption{decomp実行結果(仮)} 
+    \caption{時系列データの分解} 
     \label{fig:decomp} 
     \end{figure}
 
-上記の結果から(考察)
+
 
 \chapter{ARIMAモデルによる〜分析}
 \section{ARIMAモデルについて}
