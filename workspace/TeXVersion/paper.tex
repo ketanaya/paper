@@ -164,8 +164,20 @@
 \end{figure}
 
 \section{時系列データの自己相関}
+自己相関係数とは時系列データの値と一定期間ずらした過去の値との相関関係のことである。ここで、$r_1$を$y$と$y_t$の自己相関係数とするとき、
+$r_k$は下記のように書くことができる。
 
-図 \ref{fig:acf} は、データの自己相関をプロットしたものである。詳細な自己相関係数についても確認できる。(ここに考察)
+\begin{equation} \label{model:acf}
+    r_k = \frac{\sum_{t=k+1}^{T} (y_t - \bar{y})(y_{t-k} - \bar{y})}{\sum_{t=1}^{T} (y_t - \bar{y})^2}
+\end{equation} 
+
+なお、$T$は時系列データの長さである。そして、異なる$k$についての自己相関係数をまとめたものが、\textbf{自己相関関数(ACF)}である。
+このACFをプロットすることによって、データの持つトレンド、及び季節性について確認することができる。
+データにトレンドがある場合、観測時点が近い観測値はその値も近いため、小さいラグでの自己相関係数は大きな正値になる可能性がたかい。
+つまり、トレンドのある時系列データのACFは正値を示す傾向があり、その値はラグが増えるにつれて小さくなる。
+また、データに季節性がある場合、季節周期の倍数の箇所で他のラグ次数と比べて、自己相関係数が大きくなる。
+これらを踏まえ、取得した時系列データのACFプロットを描いた。
+図 \ref{fig:acf} は、データのACFプロットである。また、詳細な自己相関係数についても確認を行った。
 
 \begin{figure}[htbp] %何故か図がコードブロックに入り込んでる
     \centering
@@ -185,6 +197,9 @@ Autocorrelations of series ‘nikkei_cl’, by lag
    26    27    28    29    30    31    32    33 
 0.939 0.937 0.935 0.933 0.931 0.929 0.927 0.924 
 \end{Verbatim}
+
+上記の結果から、取得したデータは非常に強い自己相関を持っていることがわかった。また、上述のACFプロットの特性に照らし合わせると、
+トレンドを持っている可能性はあり、季節性に関しては持っていないということも確認できた。
 
 \chapter{時系列データの分解}
 
@@ -285,15 +300,20 @@ Rで下記のように記述することで、トレンド成分の次数を1,2,
 \chapter{ARIMAモデルによる予測}
 \section{定常性の確認} \label{sec:teizyou}
 この章では過去10年分の日経平均株価の時系列データを用いて、今後の変動を予測する。予測を行うには時系列データの特徴を踏まえ、適切な時系列モデルを選択
-する必要がある。時系列モデルの選択を行う上で重要なのは、時系列データの\emph{定常性}を確認することである。ここで、定常性について定義を行う。
-\begin{equation}
-lを時間のシフト量を表す任意の整数とするとき
-\end{equation} 
-また、
-\begin{equation}
-強定常の定義
-\end{equation}
-弱定常を定常性と呼ぶ。今回使用する時系列データは、\ref{sec:decomp-result}節で上昇トレンドを持っていることがわかっており、時点が異なると
+する必要がある。時系列モデルの選択を行う上で重要なのは、時系列データの\emph{定常性}を確認することである。ここで、定常性について定義を行う。\\
+$l$を時間のシフト量を表す任意の整数とするとき
+\begin{align}
+\begin{split} 
+& E[y_n] = E[y_{n-l}] \\
+& Var(y_n) = Var(y_{n-l}) \\
+& Cov(y_n,y_m) = Cov(y_{n-l}, y_{m-l}) \\
+\end{split}
+\end{align}
+が成り立つ時系列は\emph{弱定常}であると呼ばれる。
+また、時系列の分布が時間のシフトに関して不変で、その確率分布を時間軸方向に移動しても変化しないとき、その時系列は\emph{強定常}と呼ばれる。
+なお、これらは\cite{Kitagawa}を参照している。
+一般的に弱定常をもつ時系列のことを定常な時系列と呼び、本研究での定常は弱定常のことを指す。また、上記の定義に当てはまらない定常ではない時系列を
+非定常な時系列と呼ぶ。今回使用する時系列データは、\ref{sec:decomp-result}節で上昇トレンドを持っていることがわかっており、時点が異なると
 値が異なるため非定常の時系列データである。
 
 \section{ARIMAモデルの概要}
@@ -436,7 +456,7 @@ model |>
 図\ref{fig:acf-residual}から残差は概ね、信頼区間に収まっており残差はホワイトノイズのようだと言うことができる。
 \subsection{portmanteau検定}
 Rで下記のように記述することで、portmanteau検定の一種であるLjung-Box検定を行った。なお、portmanteau検定及び、Ljung-Box検定については
-を参照されたい。
+\cite{Ljung}を参照されたい。
 \begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
 > model |>
 +   augment() |>
@@ -492,6 +512,7 @@ model |>
 \caption{日経平均株価(終値)の予測プロット} 
 \label{fig:predict} 
 \end{figure}
+この結果から、日経平均株価は将来に渡って、上昇傾向にあることが予測される。
 
 \chapter{おわりに} % <--ここに章のタイトルを入れる
 
@@ -530,41 +551,12 @@ Hyndman, R. J., \& Khandakar, Y., (2008)
 『Automatic time series forecasting: The forecast package for R. Journal of Statistical Software』,
 URL: \url{https://www.jstatsoft.org/article/view/v027i03}
 
-\bibitem{Janssens} Janssens, J. (2014) \textit{Data Science at the Command Line}, O'Reilly Media. 
-
-(太田満久, 下田倫大, 増田泰彦監訳, 長尾高弘訳 (2015) 『コマンドラインではじめるデータサイエンス: 分析プロセスを自在に進めるテクニック』, オライリー・ジャパン.)
-
-\bibitem{Jimichi2018-a} 地道正行 (2018-a)
-『探索的財務ビッグデータ解析 --前処理、データラングリング、再現可能性--』, 
-商学論究, 第66巻, 第1号, pp. 1-31, 
-関西学院大学商学研究会. 
-
-\bibitem{Jimichi2018-b} 地道正行 (2018-b) 
-『探索的財務ビッグデータ解析 --データ可視化, 統計モデリング, モデル選択, モデル評価, 動的文書生成, 再現可能研究--』, 
-商学論究, 第66巻, 第2号, pp. 1-41, 
-関西学院大学商学研究会. 
-
-\bibitem{Jimichi2018-c}
-地道 正行 (2018-c)
-『データサイエンスの基礎: R による統計学独習』, 
-裳華房
-
-\bibitem{Motohashi} 本橋智光 (2018)『前処理大全: データ分析のための SQL/R/Python 実践テクニック』, 技術評論社.
-
-\bibitem{Nishida} 西田圭介 (2017)『ビッグデータを支える技術: 刻々とデータが脈打つ自動化の世界』, 技術評論社.
-
-\bibitem{Tange} Tange, Ole, (2018) \textit{GNU Parallel 2018}, ISBN: 9781387509881, DOI: 10.5281/zenodo.1146014, URL: \url{https://doi.org/10.5281/zenodo.1146014}, Mar, 2018.
-
-\bibitem{Wickham.et.al(2023)}
-Wickham, H., M.~\c{C}etinkaya-Rundel, and G.~Grolemund, 
-(2023)
-\textit{R for Data Science: Import, Tidy, Transform, Visualize, and Model Data, 2nd edition}, 
-O'Reilly. 
+\bibitem{Ljung} G. M. Ljung and G. E. P. Box (1978)
+『On a Measure of Lack of Fit in Time Series Models』, 
+Biometrika, Vol.65, No.2, pp. 297-303, 
+Oxford University Press. 
 
 \end{thebibliography}
 
-\section*{謝辞}
-
-本研究に対して, 関学花子先生から適切なコメントを頂いたことに, 感謝の意を表する. 
 
 \end{document}
