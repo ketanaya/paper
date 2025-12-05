@@ -62,7 +62,7 @@
                        auto.assign = FALSE)
 \end{Verbatim}
 
-\section{データの前処理}
+\section{データの前処理} \label{sec:maesyori}
 この章では分析を行うためのデータの前処理を行う。まずはデータの列構造などについてhead関数を用いて確認する。
 \begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
 > head(nikkei)
@@ -126,8 +126,8 @@
 上記の結果をもとに、欠測値が記録されている日付について調べると、全て祝日であることがわかった。
 東京証券取引所は祝日は取引を行っていないため、これらの欠測値を含んだ列は分析に不要と考え、na.omit関数によってデータから取り除く処理を行う。
 
-\section{時系列データの図示}
-2.2節で前処理を行った時系列データを用い、観測地点を横軸に、観測値を縦軸にとり隣り合う観測値を直線で結んだ図を描く。
+\section{時系列データの図示} \label{sec:plot}
+\ref{sec:maesyori}節で前処理を行った時系列データを用い、観測地点を横軸に、観測値を縦軸にとり隣り合う観測値を直線で結んだ図を描く。
 この図を描くことで、時系列データが\emph{トレンド}や\emph{季節性}を含むかをどうかを可視化することができる。なお、トレンドと季節性について定義を
 \cite{Hyndman}から引用する。
 \begin{itemize}
@@ -187,11 +187,11 @@ Autocorrelations of series ‘nikkei_cl’, by lag
 
 \chapter{時系列データの分解}
 
-\section{decomp関数の概要}
-この章では2.3節で得られた、データが上昇トレンドを持っているという考察を、Rのtimsacパッケージに含まれるdecomp関数を使って
-検証する。decomp関数とは時系列データを下記の3.1式に当てはめ、トレンド成分や季節成分などのいくつかの成分に分解する関数である。
+\section{decomp関数の概要} \label{sec:decomp}
+この章では\ref{sec:plot}節で得られた、データが上昇トレンドを持っているという考察を、Rのtimsacパッケージに含まれるdecomp関数を使って
+検証する。decomp関数とは時系列データを下記の\ref{model:decomp}式に当てはめ、トレンド成分や季節成分などのいくつかの成分に分解する関数である。
 
-\begin{equation}
+\begin{equation} \label{model:decomp}
 y(t) = T(t) + AR(t) + S(t) + TD(t) + W(t)
 \end{equation} 
 
@@ -263,9 +263,9 @@ Rで下記のように記述することで、トレンド成分の次数を1,2,
 この結果から、トレンド次数 = 1, AR次数 = 6の組み合わせがAIC = 35354.22で最小になった。よって、このモデルを採用し、decomp
 関数を実行する。
 
-\section{decomp関数の実行}
+\section{decomp関数の実行} \label{sec:decomp-result}
 
-3.1節で決定したモデルを用いて、下記のように記述し、時系列データの分解を行う。
+\ref{sec:decomp}節で決定したモデルを用いて、下記のように記述し、時系列データの分解を行う。
 \begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
 > dp <- decomp(nikkei_cl, trend.order = 1, ar.order = 6, seasonal.order = 0)
 \end{Verbatim}
@@ -281,10 +281,38 @@ Rで下記のように記述することで、トレンド成分の次数を1,2,
 
 
 
-\chapter{ARIMAモデルによる〜分析}
-\section{ARIMAモデルについて}
+\chapter{ARIMAモデルによる予測}
+\section{定常性の確認} \label{sec:teizyou}
+この章では過去10年分の日経平均株価の時系列データを用いて、今後の変動を予測する。予測を行うには時系列データの特徴を踏まえ、適切な時系列モデルを選択
+する必要がある。時系列モデルの選択を行う上で重要なのは、時系列データの\emph{定常性}を確認することである。ここで、定常性について定義を行う。
+\begin{equation}
+lを時間のシフト量を表す任意の整数とするとき
+\end{equation} 
+また、
+\begin{equation}
+強定常の定義
+\end{equation}
+弱定常を定常性と呼ぶ。今回使用する時系列データは、\ref{sec:decomp-result}節で上昇トレンドを持っていることがわかっており、時点が異なると
+値が異なるため非定常の時系列データである。
+\section{ARIMAモデルの概要}
+\ref{sec:teizyou}節で時系列データが非定常であることがわかった。非定常な時系列データに対しては様々なアプローチがあるが、今回はARIMAモデル
+を使用し、将来の値を予測する。ここで、ARIMAモデルについての定義を行う。そのために必要な\emph{差分化}、
+\emph{自己回帰モデル}、\emph{移動平均モデル}についても定義を行う。
+\subsection{差分化}
+\subsection{自己回帰モデル}
+\subsection{移動平均モデル}
+\subsection{ARIMAモデル}
+差文化、自己回帰モデル、移動平均モデルを組み合わせると、非季節性ARIMAモデル(AutoRegressive Integrated Moving Average)
+となる。ARIMAモデルのモデル式は下記のようにかくことができる。\\
+$y'_t = y_t - y_{t-1}$とするとき
+\begin{equation} \label{model:arima}
+y'_t = c + \phi_1y'_{t-1} + \dots + \phi_py'_{t-p} + \theta_1\varepsilon_{t-1} + \dots + \theta_q\varepsilon_{t-q} + \varepsilon_t
+\end{equation} 
+ただし$y'_t$は一回を超えて差分化される場合もある。\ref{model:arima}式を$ARIMA(p,d,q)$モデルと呼ぶ。
+なお, これらは \cite{Hyndman} を参照している。
+
 \section{モデル化の手順}
-非季節性時系列データにARIMAモデルを適合する際は、下記の手順を実施する。なお, これらは \cite{Hyndman} を参照している。
+非季節性時系列データにARIMAモデルを適合する際は、下記の手順を実施する。
 1.データをプロットして、異常値を特定する。
 2.必要なら、(Box-Cox変換を使って)データを変換し、分散を安定化させる。
 3.データが非定常なら、定常になるまでデータの一つ目差分を取る。
@@ -292,8 +320,11 @@ Rで下記のように記述することで、トレンド成分の次数を1,2,
 5.選んだモデルを試す、そして、AICcを使ってより良いモデルを探索する。
 6.選んだモデルからの残差を、ACFプロットやportmanteau検定でチェックする。残差がホワイトノイズらしくなければ、モデルを修正して試す。
 7.残差がホワイトノイズらしく見えるようになったら、予測を計算する。
+なお, これらは \cite{Hyndman} を参照している。
+
 \section{モデル化}
 モデル化はfableパッケージのauto.arimaを使う。
+
 \section{モデルの評価}
 \section{予測と考察}
 
