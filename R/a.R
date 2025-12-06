@@ -76,29 +76,15 @@ nikkei_ts <- tibble(
 ) |> 
   as_tsibble(index = date)
 
-nikkei_ts
-
-lambda <- BoxCox.lambda(nikkei_ts$close)
-lambda
-
-
 nikkei_ts_idx <- nikkei_ts |>
   mutate(t = row_number()) |>
   as_tsibble(index = t)
-
-nikkei_ts_idx <- nikkei_ts_idx |>
-  mutate(close_bc = box_cox(close, lambda))
-
 
 model <- nikkei_ts_idx |>
   model(auto = ARIMA(close))
 
 
-model_bc <- nikkei_ts_idx |>
-  model(auto = ARIMA(close_bc))
-
 report(model)
-report(model_bc)
 
 #normal
 model |>
@@ -108,35 +94,25 @@ model |>
 model |>
   augment() |>
   filter(.model == "auto") |>
-  features(.innov, ljung_box, lag = 10, dof = 3)
+  features(.innov, ljung_box, lag = 25, dof = 3)
 
 model |>
   forecast(h = 250) |>
   filter(.model == "auto") |>
   autoplot(nikkei_ts_idx) +
+  theme_minimal(base_family = "HiraginoSans-W3") +
   labs(
-    title = "One-year Forecast of Nikkei 225",
-    y = "Nikkei 225 (level scale)",
+    x = "日付",
+    y = "終\n値",
     level = "Prediction interval"
+       ) + 
+  theme(
+    axis.title.y = element_text(angle = 0, vjust = 0.5),
+    plot.background = element_rect(fill = "white", color = NA)
   )
 
+help(features)
 
-#Box-Cox
-model_bc |>
-  gg_tsresiduals()　
-
-
-model_bc |>
-  augment() |>
-  filter(.model == "auto") |>
-  features(.innov, ljung_box, lag = 10, dof = 3)
-
-model_bc |>
-  forecast(h = 250) |>
-  filter(.model == "auto") |>
-  autoplot(nikkei_ts_idx) +
-  labs(
-    title = "One-year Forecast of Nikkei 225",
-    y = "Nikkei 225 (level scale)",
-    level = "Prediction interval"
-  )
+nikkei_ts |> 
+  fill_gaps() |>          
+  gg_season(y = close, period = "year")

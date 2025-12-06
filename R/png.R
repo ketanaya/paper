@@ -54,3 +54,33 @@ par(mar = c(2, 2, 3, 1))
 library(timsac)
 dp <- decomp(nikkei_cl, trend.order = 1, ar.order = 6, seasonal.order = 0)
 dev.off()
+
+
+# 2. PNG保存 (現在の場所に直接保存)
+png(filename = "acf_residual.png", width = 600, height = 400)
+
+# 3. 作図 (余計なタイトルを消す)
+model |>
+  gg_tsresiduals()　
+
+
+# 4. 終了
+dev.off()
+
+png(filename = "predict_plot.png", width = 600, height = 400)
+model |>
+  forecast(h = 250) |>
+  filter(.model == "auto") |>
+  autoplot(nikkei_ts_idx) +
+  theme_minimal(base_family = "HiraginoSans-W3") +
+  labs(
+    x = "日付",
+    y = "終\n値",
+    level = "Prediction interval"
+  ) + 
+  theme(
+    axis.title.y = element_text(angle = 0, vjust = 0.5),
+    plot.background = element_rect(fill = "white", color = NA)
+  )
+dev.off()
+

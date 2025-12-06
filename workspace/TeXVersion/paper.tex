@@ -47,13 +47,25 @@
 
 \chapter{はじめに}
 
-()
+本研究では、日経平均株価を対象とし、時系列分析を用いた将来予測を行う。
+近年、金融市場は拡大を続けており、日経平均株価もその例外ではない。2024年初頭には3万円台であった株価は、2025年現在では5万円台に到達するなど、上昇傾向にある。
+しかし一方で、過去には新型コロナウイルスの感染拡大による世界的な大暴落が発生するなど、日経平均株価を含むあらゆる金融資産には常に下落リスクが内在している。
+
+このように変動の激しい金融市場において、将来の価格変動を一定の精度で予測することは、投資判断やリスク管理などの意思決定を行う上で重要な意義を持つと考えられる。
+そこで本研究では、過去の株価データに対して時系列モデルを適用し、その特性を明らかにするとともに、将来の値を予測することを目的とする。
+
+本論文の構成としては、まず
+第2章で取得した時系列データの図示等を行い、データが持つ大まかな特徴について検証し、その上で分析の方針を決定する。
+第3章では、RのTIMSACパッケージに含まれるdecomp関数を用いた時系列分解を行い、データの構成要素を明らかにする。
+第4章では、ARIMAモデルをデータに適合させ、最適なモデルの選択を行う。そして、構築したモデルを用いて将来の株価予測を行う。
+最後に第5章で、本研究で得られた知見を総括し、今後の課題について述べる。
+
 
 \chapter{データに関する検証} %<--ここに章のタイトルを入れる
 この章では、2015年から2024年までの過去10年分の日経平均株価のデータを取得し、時系列データの図示を行うことによって時系列データの
 大まかな特徴を捉え、どのような解析を行うべきか方針をたてる。
 \section{データの取得} % <--ここに節のタイトルを入れる
-今回分析ではRのquantmodパッケージを使って下記のように記述することで、2015年から2024年の日経平均株価のデータを取得している。
+今回の分析ではRのquantmodパッケージを使って下記のように記述することで、2015年から2024年の日経平均株価のデータを取得している。
 
 \begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
 > nikkei <- getSymbols(Symbols = "^N225", 
@@ -125,11 +137,11 @@
 \end{Verbatim}
 
 上記の結果をもとに、欠測値が記録されている日付について調べると、全て祝日であることがわかった。
-東京証券取引所は祝日は取引を行っていないため、これらの欠測値を含んだ列は分析に不要と考え、na.omit関数によってデータから取り除く処理を行う。
+東京証券取引所では祝日に取引は行われていないため、これらの欠測値を含んだ列は分析に不要と考え、データから取り除く処理を行った。
 
 \section{時系列データの図示} \label{sec:plot}
 \ref{sec:maesyori}節で前処理を行った時系列データを用い、観測地点を横軸に、観測値を縦軸にとり隣り合う観測値を直線で結んだ図を描く。
-この図を描くことで、時系列データが\emph{トレンド}や\emph{季節性}を含むかをどうかを可視化することができる。なお、トレンドと季節性について定義を
+この図を描くことで、時系列データが\emph{トレンド}や\emph{季節性}を含むかどうかを可視化することができる。なお、トレンドと季節性について定義を
 \cite{Hyndman}から引用する。
 \begin{itemize}
     \item トレンド
@@ -150,10 +162,10 @@
 \end{itemize}   
 
 これらを踏まえた上で、時系列データの図示を行ったところ、図 \ref{fig:nikkei-cl} のような結果が得られた。
-この図からこのデータは上昇トレンドがあることが見て取れる。また、季節性に関しては図を見る限り、確認することはできない。
-加えて、値が急激に変化している地点についても調査を行った。2020年の2月から3月にかけて値の急激な減少の後に、急上昇をしている地点が存在する。
-この原因はコロナによる経済活動の停滞及び、それを受けた日銀の金融政策に対する期待である。また、2024年の1月頃に値が急上昇している地点がある。
-この原因はNVIDIAが市場を上回る好決算を発表したことで、東京市場の半導体関連株が買われたことによるものである。
+この図からこのデータは上昇トレンドがあることが見て取れる。また、季節性に関しては図を見る限り、確認されなかった。。
+さらに、値が急激に変化している地点について調査を行った。2020年の2月から3月にかけて値の急激な減少の後に、急上昇をしている地点が存在する。
+この原因はコロナによる経済活動の停滞及び、それを受けた日銀の金融政策に対する期待によるものであったと考えられる。また、2024年の1月頃に値が急上昇している地点がある。
+この原因はNVIDIAが市場を上回る好決算を発表したことで、東京市場の半導体関連株が買われたことによるものであった。
 なお、これらは\cite{nikkei-1},\cite{nikkei-2}を参照している。
 
 \begin{figure}[htbp]
@@ -168,12 +180,13 @@
 $r_k$は下記のように書くことができる。
 
 \begin{equation} \label{model:acf}
-    r_k = \frac{\sum_{t=k+1}^{T} (y_t - \bar{y})(y_{t-k} - \bar{y})}{\sum_{t=1}^{T} (y_t - \bar{y})^2}
-\end{equation} 
+    r_k = \frac{\sum\limits_{t=k+1}^{T} (y_t - \bar{y})(y_{t-k} - \bar{y})}{\sum\limits_{t=1}^{T} (y_t - \bar{y})^2}
+\end{equation}
+
 
 なお、$T$は時系列データの長さである。そして、異なる$k$についての自己相関係数をまとめたものが、\textbf{自己相関関数(ACF)}である。
 このACFをプロットすることによって、データの持つトレンド、及び季節性について確認することができる。
-データにトレンドがある場合、観測時点が近い観測値はその値も近いため、小さいラグでの自己相関係数は大きな正値になる可能性がたかい。
+データにトレンドがある場合、観測時点が近い観測値はその値も近いため、小さいラグでの自己相関係数は大きな正値になる可能性が高い。
 つまり、トレンドのある時系列データのACFは正値を示す傾向があり、その値はラグが増えるにつれて小さくなる。
 また、データに季節性がある場合、季節周期の倍数の箇所で他のラグ次数と比べて、自己相関係数が大きくなる。
 これらを踏まえ、取得した時系列データのACFプロットを描いた。
@@ -214,45 +227,13 @@ y(t) = T(t) + AR(t) + S(t) + TD(t) + W(t)
 ここで、T(t)はトレンド成分、AR(t)はAR成分、S(t)は季節成分、TD(t)は曜日効果成分、W(t)は観測ノイズである。
 なお, これらは \cite{timsac} を参照している。\\
 decomp関数を用いるためには各成分の次数を適切に設定し、当てはまりの良いモデルを作成する必要がある。
-よって、次にモデルの次数選択を行う。まず、図\ref{fig:nikkei-cl}から今回のデータは季節成分及び、曜日効果成分を持たないと考え、除外する。
-次にトレンド成分、AR成分の次数を決定するために、AIC(赤池情報量基準, Akaike's Information Criterion)を用いる。(AICの説明)
-Rで下記のように記述することで、トレンド成分の次数を1,2,3、AR成分の次数を1~7に設定し、全ての組み合わせのAICを求めた。
+よって、次にモデルの次数選択を行う。まず、図\ref{fig:nikkei-cl}及び図\ref{fig:acf}から今回のデータは季節成分及び、曜日効果成分を持たないと考え、除外する。
+次にトレンド成分、AR成分の次数を決定するために、AIC(赤池情報量基準, Akaike's Information Criterion)を用いる。
+トレンド成分の次数を1,2,3、AR成分の次数を1--7に設定し、全ての組み合わせのAICを求め、
 これらの組み合わせの中で最もAICが小さいモデルを採用し、decomp関数を実行する。
-\begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
-    > library(timsac)
-    > y <- nikkei_cl
-    > 
-    > for (m1 in 1:3) {
-    +   for (m2 in 1:7) {
-    +     k <- 0
-    +     
-    +     fit <- try(
-    +       decomp(
-    +         y,
-    +         trend.order    = m1,
-    +         ar.order       = m2,
-    +         seasonal.order = k,
-    +         plot           = FALSE
-    +       ),
-    +       silent = TRUE
-    +     )
-    +     
-    +     if (inherits(fit, "try-error")) {
-    +       cat("[ERROR]",
-    +           "trend.order =", m1,
-    +           "ar.order =", m2,
-    +           "seasonal.order =", k,
-    +           "AIC = NA\n")
-    +     } else {
-    +       cat("trend.order =", m1,
-    +           "ar.order =", m2,
-    +           "seasonal.order =", k,
-    +           "AIC =", fit$aic, "\n")
-    +     }
-    +   }
-    + }    
-\end{Verbatim}
-上記を実行すると下記のような結果が得られる。
+
+\newpage
+
 \begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
     trend.order = 1 ar.order = 1 seasonal.order = 0 AIC = 35465.07 
     trend.order = 1 ar.order = 2 seasonal.order = 0 AIC = 35370.69 
@@ -276,8 +257,10 @@ Rで下記のように記述することで、トレンド成分の次数を1,2,
     trend.order = 3 ar.order = 6 seasonal.order = 0 AIC = 35527.38 
     trend.order = 3 ar.order = 7 seasonal.order = 0 AIC = 35530.68    
 \end{Verbatim}
-この結果から、トレンド次数 = 1, AR次数 = 6の組み合わせがAIC = 35354.22で最小になった。よって、このモデルを採用し、decomp
+上記の結果から、トレンド次数 = 1, AR次数 = 6の組み合わせがAIC = 35354.22で最小になった。よって、このモデルを採用し、decomp
 関数を実行する。
+
+\newpage
 
 \section{decomp関数の実行} \label{sec:decomp-result}
 
@@ -312,12 +295,14 @@ $l$を時間のシフト量を表す任意の整数とするとき
 が成り立つ時系列は\emph{弱定常}であると呼ばれる。
 また、時系列の分布が時間のシフトに関して不変で、その確率分布を時間軸方向に移動しても変化しないとき、その時系列は\emph{強定常}と呼ばれる。
 なお、これらは\cite{Kitagawa}を参照している。
-一般的に弱定常をもつ時系列のことを定常な時系列と呼び、本研究での定常は弱定常のことを指す。また、上記の定義に当てはまらない定常ではない時系列を
+一般的に弱定常性をもつ時系列のことを定常な時系列と呼び、本研究での定常は弱定常のことを指す。また、上記の定義に当てはまらない定常ではない時系列を
 非定常な時系列と呼ぶ。今回使用する時系列データは、\ref{sec:decomp-result}節で上昇トレンドを持っていることがわかっており、時点が異なると
 値が異なるため非定常の時系列データである。
 
+\newpage
+
 \section{ARIMAモデルの概要}
-\ref{sec:teizyou}節で時系列データが非定常であることがわかった。非定常な時系列データに対しては様々なアプローチがあるが、今回はARIMAモデル
+非定常な時系列データに対しては様々な分析手法が存在するが、今回はARIMAモデル
 を使用し、将来の値を予測する。ここで、ARIMAモデルについての定義を行う。そのために必要な\emph{差分}、
 \emph{自己回帰モデル}、\emph{移動平均モデル}について説明する。なお, これらは \cite{Hyndman} を参照している。
 
@@ -328,7 +313,7 @@ $l$を時間のシフト量を表す任意の整数とするとき
 \begin{equation} \label{model:diff}
 y'_t = y_t - y_{t-1}
 \end{equation} 
-また、一度差分を取っても時系列が定常にならないときはは2次差分を取る必要がある場合が存在する。
+また、一度差分を取っても時系列が定常にならないときは2次差分を取る必要がある場合も存在する。
 \begin{align}
 \begin{split} \label{model:doff-second}
     y''_t &= y'_t - y'_{t-1} \\
@@ -348,11 +333,11 @@ y_t = c + \phi_1y_{t-1} + \phi_2y_{t-2} + \dots + \phi_py_{t-p} + \varepsilon_t
 \subsection{移動平均モデル}
 下記のようなモデルを$q$次の移動平均モデル(moving average model)、$MA(q)$モデルと呼ぶ。
 \begin{equation} \label{model:ma}
-y_t = c + \varepsilon_t +\theta_1\varepsilon_{t-1} + \theta_2\varepsilon_{t-2} + \dots + \theta_q\varepsilon_{t-q} + 
+y_t = c + \varepsilon_t +\theta_1\varepsilon_{t-1} + \theta_2\varepsilon_{t-2} + \dots + \theta_q\varepsilon_{t-q} 
 \end{equation}
 ただし、$\varepsilon_t$はホワイトノイズである。
 \subsection{ARIMAモデル}
-差文化、自己回帰モデル、移動平均モデルを組み合わせると、ARIMAモデル(AutoRegressive Integrated Moving Average)
+差分化、自己回帰モデル、移動平均モデルを組み合わせると、ARIMAモデル(AutoRegressive Integrated Moving Average)
 となる。ARIMAモデルのモデル式は下記のように書くことができる。
 \begin{equation} \label{model:arima}
 y'_t = c + \phi_1y'_{t-1} + \dots + \phi_py'_{t-p} + \theta_1\varepsilon_{t-1} + \dots + \theta_q\varepsilon_{t-q} + \varepsilon_t
@@ -365,23 +350,23 @@ y'_t = c + \phi_1y'_{t-1} + \dots + \phi_py'_{t-p} + \theta_1\varepsilon_{t-1} +
 \begin{enumerate}[1.]
     \item データをプロットして、異常値を特定する。
     \item 必要なら、(Box-Cox変換を使って)データを変換し、分散を安定化させる。
-    \item データが非定常なら、定常になるまでデータの一つ目差分を取る。
-    \item ACF/PACFを検討する: $ARIMA(p,d,0)$モデルと$ARIMA(0,d,q)$モデルのどちらが適切か？
+    \item データが非定常なら、定常になるまでデータの1階差分を取る。
+    \item ACF（自己相関関数）とPACF（偏自己相関関数）を調べ、ARIMA(p,d,0)モデル、またはARIMA(0,d,q)モデルが適切かどうか検討する。
     \item 選んだモデルを試す、そして、AICcを使ってより良いモデルを探索する。
-    \item 選んだモデルからの残差を、ACFプロットやportmanteau検定でチェックする。残差がホワイトノイズらしくなければ、モデルを修正して試す。
+    \item 選んだモデルの残差を、ACFプロットやportmanteau検定でチェックする。残差がホワイトノイズらしくなければ、モデルを修正して試す。
     \item 残差がホワイトノイズらしく見えるようになったら、予測を計算する。
 \end{enumerate}
 なお, これらは \cite{Hyndman} を参照している。
 
 \section{ARIMA()関数について} \label{sec:ARIMA()}
-モデル化を行うにあたって、\ref{sec:model}節で示した、3〜5のステップをRのfableパッケージのARIMA()関数を用いて実施する。ARIMA()関数は後述する単位根検定とAICc最小化、そして最尤法を組み合わせて
+モデル化を行うにあたって、\ref{sec:model}節で示した、3〜5のステップをfableパッケージのARIMA()関数を用いて実施する。ARIMA()関数は単位根検定とAICc最小化、そして最尤法を組み合わせて
 ARIMAモデルを得る\textbf{Hyndman-Khandakarアルゴリズム}を使用している。
 なお、Hyndman-Khandakarアルゴリズムについては\cite{Hyndman-and-Khandakar}を参照されたい。
 ARIMA()関数は引数を指定することで、様々なアルゴリズムの変形を用いることができる。下記にHyndman-Khandakarアルゴリズムに従った、デフォルトでの
 動作を記述する。
 \begin{enumerate}[1.]
     \item 差分の次数 $0 \le d \le 2$ をKPSS検定を繰り返して決める。
-    \item 次に、$d$ 回差分を取ったデータでAICcを最小化して、$p$ と $q$ の値を選ぶ。アルゴリズムは $p$ と $q$ の全ての可能な組み合わせを考えるのではなく、ステップワイズ探索を使ってモデル空間を横断する。
+    \item 次に、$d$ 回差分を取ったデータでAICcを最小化して、$p$ と $q$ の値を選ぶ。アルゴリズムは $p$ と $q$ の全ての可能な組み合わせを考えるのではなく、ステップワイズ探索を使ってモデル空間を探索する。
     \begin{enumerate}[a.]
         \item 最初に下記の4つのモデルに適合させる。
         \begin{itemize}
@@ -390,7 +375,7 @@ ARIMA()関数は引数を指定することで、様々なアルゴリズムの�
             \item $ARIMA(1,d,0)$
             \item $ARIMA(0,d,1)$
         \end{itemize}
-        $d = 2$ でなければ定数を含める。$d \le 1$ なら、さらに追加で定数なしの $ARIMA(0,d,0)$ に適合させる。
+        $d = 2$ での場合を除き、定数項が含まれる。$d \le 1$ なら、定数項なしの $ARIMA(0,d,0)$も追加で当てはめられる。
         
         \item (a)のステップで適合させた中で（最小のAICc値を持つ）最良モデルを「現在のモデル」とする。
         
@@ -436,11 +421,13 @@ AIC=35262.44   AICc=35262.47   BIC=35291.45
 \end{Verbatim}
 上記の結果から、アルゴリズムにより、$ARIMA(2,1,1)$モデルが選ばれたことがわかった。\ref{sec:model}節の手順6に従い、次節でこのモデルについての検証を行う。
 
+\newpage
+
 \section{モデルの評価} \label{sec:model-check}
 \ref{sec:model}節より、モデルの残差をACFプロット、及びportmanteau検定で確認する。
 
-\subsection{ACFプロット}
-Rで下記のように記述することで、ACFプロットを作成した。
+\subsection{残差のACFプロット}
+Rで下記のように記述することで、残差のACFプロットを作成した。
 \begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
 model |>
   gg_tsresiduals()
@@ -453,7 +440,11 @@ model |>
 \label{fig:acf-residual} 
 \end{figure}
 
-図\ref{fig:acf-residual}から残差は概ね、信頼区間に収まっており残差はホワイトノイズのようだと言うことができる。
+図\ref{fig:acf-residual}から残差は概ね、信頼区間に収まっているが、ラグ20及び25で信頼区間を飛び出している。よってこのラグまでの期間でLjung-Box検定
+を行い、予測に問題がないか確認する。
+
+\newpage
+
 \subsection{portmanteau検定}
 Rで下記のように記述することで、portmanteau検定の一種であるLjung-Box検定を行った。なお、portmanteau検定及び、Ljung-Box検定については
 \cite{Ljung}を参照されたい。
@@ -469,42 +460,28 @@ Rで下記のように記述することで、portmanteau検定の一種であ�
 > model |>
 +   augment() |>
 +   filter(.model == "auto") |>
-+   features(.innov, ljung_box, lag = 30, dof = 3)
-# A tibble: 1 × 3
-  .model lb_stat lb_pvalue
-  <chr>    <dbl>     <dbl>
-1 auto      38.2    0.0747
-> model |>
-+   augment() |>
-+   filter(.model == "auto") |>
 +   features(.innov, ljung_box, lag = 20, dof = 3)
 # A tibble: 1 × 3
   .model lb_stat lb_pvalue
   <chr>    <dbl>     <dbl>
 1 auto      25.2    0.0893
+> model |>
++   augment() |>
++   filter(.model == "auto") |>
++   features(.innov, ljung_box, lag = 25, dof = 3)
+# A tibble: 1 × 3
+  .model lb_stat lb_pvalue
+  <chr>    <dbl>     <dbl>
+1 auto      30.2     0.115
+
 \end{Verbatim}
-上記の結果から、ラグが10,20,30の場合でいずれもp値は0.05よりも多きいためモデルの残差はホワイトノイズであると言える。
+上記の結果から、ラグが10,20,25の場合でいずれもp値は0.05よりも大きいため予測を実施するには問題ないということがわかる。
+
+\newpage
 
 \section{予測と考察}
 \ref{sec:model-check}節でモデルの残差がホワイトノイズであることが確かめられたため、\ref{sec:model}節の手順7に移行し、将来の値の予測を行う。
 なお、今回は1年分の予測を行うことを目標にし、東京証券取引所の1年間の営業日数約250日分の予測を行う。
-下記のように記述して、予測を計算し、プロットする。
-\begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
-model |>
-  forecast(h = 250) |>
-  filter(.model == "auto") |>
-  autoplot(nikkei_ts_idx) +
-  theme_minimal(base_family = "HiraginoSans-W3") +
-  labs(
-    x = "日付",
-    y = "終\n値",
-    level = "Prediction interval"
-       ) + 
-  theme(
-    axis.title.y = element_text(angle = 0, vjust = 0.5),
-    plot.background = element_rect(fill = "white", color = NA)
-  )
-\end{Verbatim}
 
 \begin{figure}[htbp]
 \centering
@@ -512,18 +489,23 @@ model |>
 \caption{日経平均株価(終値)の予測プロット} 
 \label{fig:predict} 
 \end{figure}
-この結果から、日経平均株価は将来に渡って、上昇傾向にあることが予測される。
+図\ref{fig:predict}から、日経平均株価は将来に渡って、上昇傾向にあることが予測される。
+また、実際に日経平均株価は2025年12月の時点で5万円台を推移しており、今回の予測は実際の株価の推移と概ね一致している。
 
 \chapter{おわりに} % <--ここに章のタイトルを入れる
 
-()
+本研究では、日経平均株価の時系列データを分析し、データの持つ統計的特徴を明らかにすること、および時系列モデルを作成して将来の値を予測することを目的とした。
+第2章では時系列データの図示により大まかな特徴を捉え、第3章ではdecomp関数による時系列分解、第4章ではARIMAモデルを用いた将来予測を行った。
+分析の結果、対象期間におけるデータは明確な上昇トレンドを持つこと、またモデル選択においては$ARIMA(2,1,1)$モデルが最適であること、そして1年間の予測では日経平均株価が5万円台に到達する可能性があることの3点が明らかとなった。
+
+しかしながら、本研究には限界も存在する。今回は単変量のARIMAモデルを使用したが、株価などの複雑な金融指標を過去の自身の値のみで完全に説明することは困難である。
+実際の市場は、国内外の目まぐるしく変化する政治情勢や金融政策、あるいはAIをはじめとした技術革新によるビジネス環境の急速な変化など、多種多様な外的要因の影響を強く受ける。
+例えば、2025年における株価の急変動に見られるように、事前のモデル予測を覆すような社会的・政治的イベントが発生した場合、単変量モデルでの対応には限界がある。
+
+したがって、より精緻な予測を行うためには、過去の価格データだけでなく、経済指標やテキストデータ（ニュースや要人発言）などの外部変数を組み込んだ多変量モデルの構築などが求められるだろう。
+今後は、こうした技術的な知見を深めることに加え、経済に影響を与えうる社会情勢を継続的に注視し、分析モデルへと反映させていくことを課題としたい。
 
 \begin{thebibliography}{99} % 文献リストの作成
-
-\bibitem{timsac}
-The Institute of Statistical Mathematics (2023)
-\textit{timsac: Time Series Analysis and Control Package},
-URL: \url{https://cran.r-project.org/package=timsac}.
 
 \bibitem{Hyndman} 
 Hyndman, R.J., \& Athanasopoulos, G. (2021)
@@ -531,6 +513,13 @@ Hyndman, R.J., \& Athanasopoulos, G. (2021)
 OTexts: Melbourne, Australia. 
 URL: \url{https://otexts.com/fpp3/}. 
 Accessed on 2 December 2025
+
+\bibitem{timsac}
+The Institute of Statistical Mathematics (2023)
+\textit{timsac: Time Series Analysis and Control Package},
+URL: \url{https://cran.r-project.org/package=timsac}.
+
+
 
 \bibitem{Kitagawa} 北川源四郎 (2020) 
 『Rによる時系列モデリング入門』,
