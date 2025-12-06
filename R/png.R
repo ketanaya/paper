@@ -1,5 +1,11 @@
 library(quantmod)
-library(ggplot2)
+library(tidyverse)
+library(tidyverse)
+library(conflicted) # ← これを追加
+
+# "filter" コマンドは dplyr のものを優先して使う、と宣言
+conflict_prefer("filter", "dplyr")
+conflict_prefer("lag", "dplyr")
 
 # 1. データの取得
 nikkei <- getSymbols(Symbols = "^N225", 
@@ -12,7 +18,8 @@ nikkei <- getSymbols(Symbols = "^N225",
 nikkei_cl <- Cl(nikkei)
 nikkei_cl <- na.omit(nikkei_cl)
 
-df_nikkei <- ggplot2::fortify(nikkei_cl)
+df <- ggplot2::fortify(nikkei_cl)
+head(df_nikkei)
 class(df_nikkei)
 colnames(df_nikkei) <- c("Date", "Price")
 head(df_nikkei)
@@ -71,8 +78,8 @@ png(filename = "predict_plot.png", width = 600, height = 400)
 model |>
   forecast(h = 250) |>
   filter(.model == "auto") |>
-  autoplot(nikkei_ts_idx) +
-  theme_minimal(base_family = "HiraginoSans-W3") +
+  na.omit() 
+   autoplot(nikkei_ts_idx) +
   labs(
     x = "日付",
     y = "終\n値",
@@ -82,5 +89,8 @@ model |>
     axis.title.y = element_text(angle = 0, vjust = 0.5),
     plot.background = element_rect(fill = "white", color = NA)
   )
+   
 dev.off()
+
+rlang::last_trace()
 

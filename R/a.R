@@ -4,13 +4,26 @@ nikkei <- getSymbols(Symbols = "^N225",
                      from = "2015-01-01",
                      to = "2024-12-31",
                      auto.assign = FALSE)
-head(nikkei)
+
 nikkei_cl <- Cl(nikkei)
 summary(nikkei_cl)
 nikkei_cl <- na.omit(nikkei_cl)
 summary(nikkei_cl)
-plot(nikkei_cl, main = NULL)
-help("plot")
+
+df <- ggplot2::fortify(nikkei_cl)
+p <- ggplot(data = df, aes(x = Index, y = N225.Close)) +
+  geom_line() +
+  labs(title = NULL,
+       x = "日付",
+       y = "終\n値") +
+  theme(
+    axis.title.y = element_text(angle = 0, vjust = 0.5),
+    plot.background = element_rect(fill = "white", color = NA)
+  )
+print(p)
+
+
+
 acf(nikkei_cl,main = "")
 acf(nikkei_cl, plot = FALSE)
 help("summary")
@@ -100,11 +113,9 @@ model |>
   forecast(h = 250) |>
   filter(.model == "auto") |>
   autoplot(nikkei_ts_idx) +
-  theme_minimal(base_family = "HiraginoSans-W3") +
   labs(
     x = "日付",
     y = "終\n値",
-    level = "Prediction interval"
        ) + 
   theme(
     axis.title.y = element_text(angle = 0, vjust = 0.5),

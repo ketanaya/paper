@@ -228,11 +228,45 @@ y(t) = T(t) + AR(t) + S(t) + TD(t) + W(t)
 なお, これらは \cite{timsac} を参照している。\\
 decomp関数を用いるためには各成分の次数を適切に設定し、当てはまりの良いモデルを作成する必要がある。
 よって、次にモデルの次数選択を行う。まず、図\ref{fig:nikkei-cl}及び図\ref{fig:acf}から今回のデータは季節成分及び、曜日効果成分を持たないと考え、除外する。
-次にトレンド成分、AR成分の次数を決定するために、AIC(赤池情報量基準, Akaike's Information Criterion)を用いる。
-トレンド成分の次数を1,2,3、AR成分の次数を1--7に設定し、全ての組み合わせのAICを求め、
+次にトレンド成分、AR成分の次数を決定するために、AIC(赤池情報量基準, Akaike Information Criterion)を用いる。
+Rで下記のように記述することで、トレンド成分の次数を1,2,3、AR成分の次数を1--7に設定し、全ての組み合わせのAICを求め、
 これらの組み合わせの中で最もAICが小さいモデルを採用し、decomp関数を実行する。
 
 \newpage
+
+\begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
+    > y <- nikkei_cl
+    > 
+    > for (m1 in 1:3) {
+    +   for (m2 in 1:7) {
+    +     k <- 0
+    +     
+    +     fit <- try(
+    +       decomp(
+    +         y,
+    +         trend.order    = m1,
+    +         ar.order       = m2,
+    +         seasonal.order = k,
+    +         plot           = FALSE
+    +       ),
+    +       silent = TRUE
+    +     )
+    +     
+    +     if (inherits(fit, "try-error")) {
+    +       cat("[ERROR]",
+    +           "trend.order =", m1,
+    +           "ar.order =", m2,
+    +           "seasonal.order =", k,
+    +           "AIC = NA\n")
+    +     } else {
+    +       cat("trend.order =", m1,
+    +           "ar.order =", m2,
+    +           "seasonal.order =", k,
+    +           "AIC =", fit$aic, "\n")
+    +     }
+    +   }
+    + }    
+\end{Verbatim}
 
 \begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
     trend.order = 1 ar.order = 1 seasonal.order = 0 AIC = 35465.07 
@@ -259,8 +293,6 @@ decomp関数を用いるためには各成分の次数を適切に設定し、�
 \end{Verbatim}
 上記の結果から、トレンド次数 = 1, AR次数 = 6の組み合わせがAIC = 35354.22で最小になった。よって、このモデルを採用し、decomp
 関数を実行する。
-
-\newpage
 
 \section{decomp関数の実行} \label{sec:decomp-result}
 
@@ -358,11 +390,11 @@ y'_t = c + \phi_1y'_{t-1} + \dots + \phi_py'_{t-p} + \theta_1\varepsilon_{t-1} +
 \end{enumerate}
 なお, これらは \cite{Hyndman} を参照している。
 
-\section{ARIMA()関数について} \label{sec:ARIMA()}
-モデル化を行うにあたって、\ref{sec:model}節で示した、3〜5のステップをfableパッケージのARIMA()関数を用いて実施する。ARIMA()関数は単位根検定とAICc最小化、そして最尤法を組み合わせて
+\section{ARIMA関数について} \label{sec:ARIMA()}
+モデル化を行うにあたって、\ref{sec:model}節で示した、3〜5のステップをfableパッケージのARIMA関数を用いて実施する。ARIMA関数は単位根検定とAICc最小化、そして最尤法を組み合わせて
 ARIMAモデルを得る\textbf{Hyndman-Khandakarアルゴリズム}を使用している。
 なお、Hyndman-Khandakarアルゴリズムについては\cite{Hyndman-and-Khandakar}を参照されたい。
-ARIMA()関数は引数を指定することで、様々なアルゴリズムの変形を用いることができる。下記にHyndman-Khandakarアルゴリズムに従った、デフォルトでの
+ARIMA関数は引数を指定することで、様々なアルゴリズムの変形を用いることができる。下記にHyndman-Khandakarアルゴリズムに従った、デフォルトでの
 動作を記述する。
 \begin{enumerate}[1.]
     \item 差分の次数 $0 \le d \le 2$ をKPSS検定を繰り返して決める。
@@ -391,7 +423,7 @@ ARIMA()関数は引数を指定することで、様々なアルゴリズムの�
 \end{enumerate}
 
 \section{モデル作成} \label{sec:make-model}
-\ref{sec:ARIMA()}を踏まえて、ARIMA()関数を実行し、モデル化を行う。Rで下記のように記述することでモデル化を行うことができる。
+\ref{sec:ARIMA()}を踏まえて、ARIMA関数を実行し、モデル化を行う。Rで下記のように記述することでモデル化を行うことができる。
 \begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
     > nikkei_ts <- tibble(
 +   date  = as.Date(time(nikkei_cl)),       
@@ -480,8 +512,23 @@ Rで下記のように記述することで、portmanteau検定の一種であ�
 \newpage
 
 \section{予測と考察}
-\ref{sec:model-check}節でモデルの残差がホワイトノイズであることが確かめられたため、\ref{sec:model}節の手順7に移行し、将来の値の予測を行う。
-なお、今回は1年分の予測を行うことを目標にし、東京証券取引所の1年間の営業日数約250日分の予測を行う。
+\ref{sec:model-check}節でモデルの残差がホワイトノイズであることが確かめられたため、\ref{sec:model}節の手順7に移行し、
+Rで下記のように記述し、将来の値の予測を行う。なお、今回は1年分の予測を行うことを目標にし、東京証券取引所の1年間の営業日数約250日分の予測を行う。
+
+\begin{Verbatim}[fontsize=\small, baselinestretch=0.9, frame=single]
+model |>
+  forecast(h = 250) |>
+  filter(.model == "auto") |>
+  autoplot(nikkei_ts_idx) +
+  labs(
+    x = "日付",
+    y = "終\n値",
+       ) + 
+  theme(
+    axis.title.y = element_text(angle = 0, vjust = 0.5),
+    plot.background = element_rect(fill = "white", color = NA)
+  )
+  \end{Verbatim}
 
 \begin{figure}[htbp]
 \centering
@@ -514,16 +561,19 @@ OTexts: Melbourne, Australia.
 URL: \url{https://otexts.com/fpp3/}. 
 Accessed on 2 December 2025
 
-\bibitem{timsac}
-The Institute of Statistical Mathematics (2023)
-\textit{timsac: Time Series Analysis and Control Package},
-URL: \url{https://cran.r-project.org/package=timsac}.
-
-
+\bibitem{Hyndman-and-Khandakar}
+Hyndman, R. J., \& Khandakar, Y., (2008)
+『Automatic time series forecasting: The forecast package for R. Journal of Statistical Software』,
+URL: \url{https://www.jstatsoft.org/article/view/v027i03}
 
 \bibitem{Kitagawa} 北川源四郎 (2020) 
 『Rによる時系列モデリング入門』,
 岩波書店
+
+\bibitem{Ljung} G. M. Ljung and G. E. P. Box (1978)
+『On a Measure of Lack of Fit in Time Series Models』, 
+Biometrika, Vol.65, No.2, pp. 297-303, 
+Oxford University Press.
 
 \bibitem{nikkei-1} 
 日本経済新聞, (10 April 2020),
@@ -535,15 +585,12 @@ URL: \url{https://www.nikkei.com/article/DGXMZO57807450Y0A400C2I00000/}
 『日経平均、終値3万9098円　34年ぶり最高値更新』,
 URL: \url{https://www.nikkei.com/article/DGXZQOFL220S70S4A220C2000000/}
 
-\bibitem{Hyndman-and-Khandakar}
-Hyndman, R. J., \& Khandakar, Y., (2008)
-『Automatic time series forecasting: The forecast package for R. Journal of Statistical Software』,
-URL: \url{https://www.jstatsoft.org/article/view/v027i03}
+\bibitem{timsac}
+The Institute of Statistical Mathematics (2023)
+\textit{timsac: Time Series Analysis and Control Package},
+URL: \url{https://cran.r-project.org/package=timsac}.
 
-\bibitem{Ljung} G. M. Ljung and G. E. P. Box (1978)
-『On a Measure of Lack of Fit in Time Series Models』, 
-Biometrika, Vol.65, No.2, pp. 297-303, 
-Oxford University Press. 
+ 
 
 \end{thebibliography}
 
